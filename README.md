@@ -80,14 +80,13 @@ After successfully completing installation, you'll be ready to run the demo.
 	- `cd $AffordanceNet_ROOT`
 	- `./experiments/scripts/faster_rcnn_end2end.sh [GPU_ID] [NET] [--set ...]`
 	- e.g.: `./experiments/scripts/faster_rcnn_end2end.sh 0 VGG16 pascal_voc`
-	- We use `pascal_voc` alias although we're training using IIT-AFF dataset.
+	- We use `pascal_voc` alias although we're training using the IIT-AFF dataset.
 
 
 
 ### Notes
-
-	- AffordanceNet vs. Mask-RCNN: AffordanceNet can be considered as a general version of Mask-RCNN when we have multiple classes inside each instance.
-	- The current network achitecture is slightly diffrent from the paper, but it achieves the same accuracy.
+1. AffordanceNet vs. Mask-RCNN: AffordanceNet can be considered as a general version of Mask-RCNN when we have multiple classes inside each instance.
+2. The current network achitecture is slightly diffrent from the paper, but it achieves the same accuracy.
 	
 
 
