@@ -1,6 +1,7 @@
 ## [AffordanceNet: An End-to-End Deep Learning Approach for Object Affordance Detection](https://arxiv.org/pdf/1709.07326.pdf)
 By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid, Darwin G. Caldwell, Nikos G. Tsagarakis (\* equal contribution)
 
+![affordance-net](https://github.com/nqanh/affordance-net/tree/master/tools/temp_output/iit_aff_dataset.jpg)
 
 ### Contents
 1. [Requirements](#requirements)
