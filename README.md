@@ -70,8 +70,8 @@ After successfully completing installation, you'll be ready to run the demo.
 	- `cd $AffordanceNet_ROOT`
 	- `./tools/demo_asus.py`
 	- You may want to change the object id and/or affordance id (line `380`, `381` in `demo_asus.py`). Currently, we select the `bottle` and its `grasp` affordance.
-	- The 3D grasp pose can be visualized with [rviz](http://wiki.ros.org/rviz): 
-	![affordance-net-asus](https://raw.githubusercontent.com/nqanh/affordance-net/master/tools/temp_output/iit_aff_dataset.jpg "affordance-net-asus")
+	- The 3D grasp pose can be visualized with [rviz](http://wiki.ros.org/rviz). You should see something like this: 
+	![affordance-net-asus](https://raw.githubusercontent.com/nqanh/affordance-net/master/tools/temp_output/asus_affordance_net_demo.jpg "affordance-net-asus")
 	
 ### Training
 
