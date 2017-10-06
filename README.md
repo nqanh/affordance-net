@@ -60,15 +60,15 @@ After successfully completing installation, you'll be ready to run the demo.
 	- `export PYTHONPATH=$AffordanceNet_ROOT/caffe-affordance-net/python:$PYTHONPATH`
 
 1. Demo on static images:
-	- `cd $AffordanceNet_ROOT`
-	- `./tools/demo_img.py`
+	- `cd $AffordanceNet_ROOT/tools`
+	- `python demo_img.py`
 	- You should see the detected objects and their affordances:
 	
 2. (Optional) Demo on depth camera (such as Asus Xtion):
 	- With AffordanceNet and the depth camera, you can easily select the interested object and its affordances for applications such as grasping, pouring, etc.
 	- First, launch your depth camera with ROS, OpenNI, etc.
-	- `cd $AffordanceNet_ROOT`
-	- `./tools/demo_asus.py`
+	- `cd $AffordanceNet_ROOT/tools`
+	- `python demo_asus.py`
 	- You may want to change the object id and/or affordance id (line `380`, `381` in `demo_asus.py`). Currently, we select the `bottle` and its `grasp` affordance.
 	- The 3D grasp pose can be visualized with [rviz](http://wiki.ros.org/rviz). You should see something like this: 
 	![affordance-net-asus](https://raw.githubusercontent.com/nqanh/affordance-net/master/tools/temp_output/asus_affordance_net_demo.jpg "affordance-net-asus")
