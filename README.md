@@ -47,7 +47,7 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid, Darwin G. Caldwell, Nikos G. Tsagara
     - `make`
 
 
-4. Download [pretrained weights](https://drive.google.com/file/d/0Bx3H_TbKFPCjNlMtSGJlQ0dxVzQ/view?usp=sharing):
+4. Download [pretrained weights](https://drive.google.com/file/d/0Bx3H_TbKFPCjNlMtSGJlQ0dxVzQ/view?usp=sharing). This weight is trained on the training set of the [IIT-AFF dataset](https://sites.google.com/site/iitaffdataset/):
     - Extract the file you downloaded to `$AffordanceNet_ROOT`
     - Make sure you have the caffemodel file like this: `'$AffordanceNet_ROOT/pretrained/AffordanceNet_200K.caffemodel`
 
@@ -65,7 +65,7 @@ After successfully completing installation, you'll be ready to run the demo.
 	- You should see the detected objects and their affordances:
 	
 2. (Optional) Demo on depth camera (such as Asus Xtion):
-	- With AffordanceNet and the depth camera, you can easily select the interested object and its affordances for applications such as grasping, pouring, etc.
+	- With AffordanceNet and the depth camera, you can easily select the interested object and its affordances for robotic applications such as grasping, pouring, etc.
 	- First, launch your depth camera with ROS, OpenNI, etc.
 	- `cd $AffordanceNet_ROOT/tools`
 	- `python demo_asus.py`
