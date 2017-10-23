@@ -91,7 +91,9 @@ After successfully completing installation, you'll be ready to run the demo.
 ### Notes
 1. AffordanceNet vs. Mask-RCNN: AffordanceNet can be considered as a general version of Mask-RCNN when we have multiple classes inside each instance.
 2. The current network achitecture is slightly diffrent from the paper, but it achieves the same accuracy.
-	
+3. Train AffordanceNet on your data:
+	- Format your images as in Pascal-VOC dataset (as in `$AffordanceNet_ROOT/data/VOCdevkit2012` folder).
+	- Prepare the affordance masks (as in `$AffordanceNet_ROOT/data/cache` folder): For each object in the image, we need to create a an affordance mask for each affordance and save as a .sm file. See  `$AffordanceNet_ROOT/utils` for details.
 
 
 ### Citing AffordanceNet
