@@ -31,8 +31,7 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid, Darwin G. Caldwell, Nikos G. Tsagara
 
 ### Installation
 
-1. Clone the AffordanceNet repository into `$AffordanceNet_ROOT` folder:
-	- `git clone https://github.com/nqanh/affordance-net.git`
+1. Clone the AffordanceNet repository into your `$AffordanceNet_ROOT` folder.
 	
 	
 2. Build `Caffe` and `pycaffe`:
@@ -62,7 +61,7 @@ After successfully completing installation, you'll be ready to run the demo.
 1. Demo on static images:
 	- `cd $AffordanceNet_ROOT/tools`
 	- `python demo_img.py`
-	- You should see the detected objects and their affordances:
+	- You should see the detected objects and their affordances.
 	
 2. (Optional) Demo on depth camera (such as Asus Xtion):
 	- With AffordanceNet and the depth camera, you can easily select the interested object and its affordances for robotic applications such as grasping, pouring, etc.
