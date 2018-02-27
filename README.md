@@ -1,5 +1,5 @@
 ## [AffordanceNet: An End-to-End Deep Learning Approach for Object Affordance Detection](https://arxiv.org/pdf/1709.07326.pdf)
-By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid, Darwin G. Caldwell, Nikos G. Tsagarakis (\* equal contribution)
+By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid (\* equal contribution)
 
 ![affordance-net](https://raw.githubusercontent.com/nqanh/affordance-net/master/tools/temp_output/iit_aff_dataset.jpg "affordance-net")
 
@@ -20,7 +20,6 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid, Darwin G. Caldwell, Nikos G. Tsagara
 2. Hardware
 	- To train a full AffordanceNet, you'll need a GPU with ~11GB (e.g. Titan, K20, K40, Tesla, ...).
 	- To test a full AffordanceNet, you'll need ~6GB GPU.
-	- Smaller net will be avalable soon.
 
 3. [Optional] For robotic demo
 	- [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu)
@@ -99,11 +98,11 @@ After successfully completing installation, you'll be ready to run the demo.
 
 If you find AffordanceNet useful in your research, please consider citing:
 
-	@article{AffordanceNet17,
+	@inproceedings{AffordanceNet18,
 	  title={AffordanceNet: An End-to-End Deep Learning Approach for Object Affordance Detection},
-	  author={Do, Thanh-Toan and Nguyen, Anh and Reid, Ian and Caldwell, Darwin G and Tsagarakis, Nikos G},
-	  journal={arXiv:1709.07326},
-	  year={2017}
+	  author={Do, Thanh-Toan and Nguyen, Anh and Reid, Ian},
+	  booktitle={International Conference on Robotics and Automation (ICRA)},
+	  year={2018}
 	}
 
 
