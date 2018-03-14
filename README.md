@@ -45,7 +45,7 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid (\* equal contribution)
     - `make`
 
 
-4. Download pretrained weights ([Google Drive](https://drive.google.com/file/d/0Bx3H_TbKFPCjNlMtSGJlQ0dxVzQ/view?usp=sharing) [One Drive](https://studenthcmusedu-my.sharepoint.com/:u:/g/personal/nqanh_mso_hcmus_edu_vn/ETD6q64-L1lCgtNEryA42NwBNM9vNoyE8QyxAYzgt8NqnA?e=uRCxPg)). This weight is trained on the training set of the [IIT-AFF dataset](https://sites.google.com/site/iitaffdataset/):
+4. Download pretrained weights ([Google Drive](https://drive.google.com/file/d/0Bx3H_TbKFPCjNlMtSGJlQ0dxVzQ/view?usp=sharing), [One Drive](https://studenthcmusedu-my.sharepoint.com/:u:/g/personal/nqanh_mso_hcmus_edu_vn/ETD6q64-L1lCgtNEryA42NwBNM9vNoyE8QyxAYzgt8NqnA?e=uRCxPg)). This weight is trained on the training set of the [IIT-AFF dataset](https://sites.google.com/site/iitaffdataset/):
     - Extract the file you downloaded to `$AffordanceNet_ROOT`
     - Make sure you have the caffemodel file like this: `'$AffordanceNet_ROOT/pretrained/AffordanceNet_200K.caffemodel`
 
