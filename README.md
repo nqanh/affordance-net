@@ -49,6 +49,22 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid (\* equal contribution)
     - Extract the file you downloaded to `$AffordanceNet_ROOT`
     - Make sure you have the caffemodel file like this: `'$AffordanceNet_ROOT/pretrained/AffordanceNet_200K.caffemodel`
 
+### Installation of Caffe with CUDA 10.2 & CUDNN 7
+
+1. The Makefile.config cane be created by following the instruction [here](https://github.com/hongtaowu67/Engineering_Note#installing-caffe).
+
+2. git clone the latest Caffe from the [official BVLC caffe repo](https://github.com/BVLC/caffe)
+
+3. Switch `$AffordanceNet_Root/caffe-affordance-net/include/caffe/util/cudnn.hpp` with the corresponding one in the latest Caffe repo.
+
+4. Switch every file initialized with cudnn (e.g., cudnn_lrn_layer.cn, cudnn_pooling_layer.cpp, etc) in `$AffordanceNet_Root/caffe-affordance-net/include/caffe/layers` with the corresponding files in the latest Caffe repo.
+
+5. Switch every file initialized with cudnn in `$AffordanceNet_Root/caffe-affordance-net/src/caffe/layers` with the corresponding files in the latest Caffe repo.
+
+6. Build the caffe module:
+	- `make all -j8`
+	- `make pycaffe`
+
 	
 ### Demo
 
