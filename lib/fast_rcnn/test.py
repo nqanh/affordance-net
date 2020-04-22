@@ -18,7 +18,7 @@ from fast_rcnn.nms_wrapper import nms
 import cPickle
 from utils.blob import im_list_to_blob
 import os
-import Image
+from PIL import Image
 from pycocotools import mask as COCOmask
 
 def _get_image_blob(im):
