@@ -53,7 +53,8 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid (\* equal contribution)
 
 1. The Makefile.config cane be created by following the instruction [here](https://github.com/hongtaowu67/Engineering_Note#installing-caffe).
 
-2. git clone the latest Caffe from the [official BVLC caffe repo](https://github.com/BVLC/caffe)
+2. git clone the latest Caffe from the [official BVLC caffe repo](https://github.com/BVLC/caffe).
+	- `git clone https://github.com/BVLC/caffe`
 
 3. Switch `$AffordanceNet_Root/caffe-affordance-net/include/caffe/util/cudnn.hpp` with the corresponding one in the latest Caffe repo.
 
