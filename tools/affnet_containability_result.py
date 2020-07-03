@@ -24,9 +24,10 @@ cwd = os.getcwd()
 root_path = '/home/hongtao/src/affordance-net'  # get parent path
 print 'AffordanceNet root folder: ', root_path
 # img_folder = cwd + '/img'
-img_folder = '/home/hongtao/Dropbox/ICRA2021/data/affnet_benchmark'
-class_subfolders = ['bowl', 'cup', 'drill', 'hammer', 'knife', 'pan', 'spatula']
-class_folders = [os.path.join(img_folder, class_subfolder) for class_subfolder in class_subfolders]
+data_dir = '/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_crop'
+# class_folders = ['bowl', 'cup', 'drill', 'hammer', 'knife', 'pan', 'spatula']
+class_folders = ['bowl']
+
 
 
 OBJ_CLASSES = ('__background__', 'bowl', 'tvm', 'pan', 'hammer', 'knife', 'cup', 'drill', 'racket', 'spatula', 'bottle')
@@ -236,7 +237,7 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
                 cv2.imshow('Mask' + str(i), color_curr_mask)
                 cv2.imshow('Obj detection', img_out)
                 cv2.waitKey(0)            
-            cv2.imwrite(os.path.join(benchmark_folder,'mask_' + str(i) + '_' + im_name), color_curr_mask)
+            # cv2.imwrite(os.path.join(benchmark_folder,'mask_' + str(i) + '_' + im_name), color_curr_mask)
 
 
     ori_file_path = img_folder + '/' + im_name 
@@ -248,7 +249,9 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
     
     # cv2.imshow('Obj detection', img_out)
     # cv2.waitKey(0)
-    cv2.imwrite(os.path.join(benchmark_folder, 'objdet_' + im_name), img_out)
+    # cv2.imwrite(os.path.join(benchmark_folder, 'objdet_' + im_name), img_out)
+
+    return color_curr_mask, img_out
     
 
 
@@ -276,7 +279,9 @@ def run_affordance_net(net, image_name):
     # print 'im_detect2 rois_class_ind: ', rois_class_ind
     
     # Visualize detections for each class
-    visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
+    color_cuur_mask, img_out = visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
+
+    return color_cuur_mask, img_out
 
 
 def parse_args():
@@ -328,25 +333,51 @@ if __name__ == '__main__':
     #     print 'Current img: ', im_name
     #     run_affordance_net(net, im_name)
     
+    benchmark_dir = '/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_result'
     # Class
     for class_folder in class_folders:
-        object_subfolders = os.listdir(class_folder)
-        object_folders = [os.path.join(class_folder, object_subfolder) for object_subfolder in object_subfolders]
+        class_dir = os.path.join(data_dir, class_folder)
+        
+        benchmark_class_dir = os.path.join(benchmark_dir, class_folder)
+        if os.path.exists(benchmark_class_dir):
+                pass
+        else:
+            os.mkdir(benchmark_class_dir)
+        
+        object_folders = os.listdir(class_dir)
+
+        print "object folders: ", object_folders
+
         # Object
         for object_folder in object_folders:
-            benchmark_folder = os.path.join(object_folder, "affnet_benchmark_0623")
-            if os.path.exists(benchmark_folder):
+            benchmark_obj_folder = os.path.join(benchmark_class_dir, object_folder)
+            if os.path.exists(benchmark_obj_folder):
                 pass
             else:
-                os.mkdir(benchmark_folder)
-
-            img_folder = os.path.join(object_folder, 'rgbd')
-            img_folder_files = os.listdir(img_folder)
-            for img_folder_file in img_folder_files:
-                if 'color' in img_folder_file:
-                    im_name = img_folder_file
-                    print 'Current img: ', os.path.join(img_folder, img_folder_file)
-                    run_affordance_net(net, im_name)
-                    print "============"
+                os.mkdir(benchmark_obj_folder)
+            obj_dir = os.path.join(class_dir, object_folder)
+            img_folder = obj_dir # the code needs this parameter to find the image            
+            img_files = os.listdir(obj_dir)
+            for img_file in img_files:
+                print 'Current img: ', os.path.join(obj_dir, img_file)
+                im_name = img_file
+                color_curr_mask, img_out = run_affordance_net(net, im_name)
+                print "======="
+                img_filename = img_file.split(".")[0]
+                mask_filename = img_filename + ".mask.png"
+                mask_path = os.path.join(benchmark_obj_folder, mask_filename)
+                cv2.imwrite(mask_path, color_curr_mask)
+                objdet_filename = img_filename + ".objdet.png"
+                objdet_path = os.path.join(benchmark_obj_folder, objdet_filename)
+                cv2.imwrite(objdet_path, img_out)
+                
+            # img_dir = os.path.join(object_folder, 'rgbd')
+            # img_folder_files = os.listdir(img_folder)
+            # for img_folder_file in img_folder_files:
+            #     if 'color' in img_folder_file:
+            #         im_name = img_folder_file
+            #         print 'Current img: ', os.path.join(img_folder, img_folder_file)
+            #         run_affordance_net(net, im_name)
+            #         print "============"
 
 
