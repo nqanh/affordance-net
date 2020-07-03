@@ -72,7 +72,7 @@ By Thanh-Toan Do\*, Anh Nguyen\*, Ian Reid (\* equal contribution)
 After successfully completing installation, you'll be ready to run the demo. 
 
 0. Export pycaffe path:
-	- `export PYTHONPATH=$AffordanceNet_ROOT/caffe-affordance-net/python:$PYTHONPATH`
+	- `export PYTHONPATH=AffordanceNet_ROOT/caffe-affordance-net/python:$PYTHONPATH`
 
 1. Demo on static images:
 	- `cd $AffordanceNet_ROOT/tools`
