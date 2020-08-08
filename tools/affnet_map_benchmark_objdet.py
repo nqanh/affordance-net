@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """
 Use the confidence of the object detection as the confidence for object classification.
 If the predicted class is cup, pan, bowl, then the confidence is used as the confidence
@@ -16,6 +18,7 @@ See README.md for installation instructions before running.
 Demo script to perform affordace detection from images
 """
 
+
 import _init_paths
 from fast_rcnn.config import cfg
 from fast_rcnn.test import im_detect2
@@ -25,6 +28,7 @@ from utils.timer import Timer
 import numpy as np
 import os, cv2
 import argparse
+import json
 
 import caffe
 
@@ -35,9 +39,9 @@ good_range = 0.005
 # get current dir
 cwd = os.getcwd()
 root_path = '/home/hongtao/src/affordance-net'  # get parent path
-print 'AffordanceNet root folder: ', root_path
+print ('AffordanceNet root folder: ', root_path)
 # img_folder = cwd + '/img'
-data_dir = '/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_crop'
+data_dir = '/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_benchmark_object'
 class_folders = ['bowl', 'cup', 'drill', 'hammer', 'knife', 'pan', 'spatula']
 # class_folders = ['cup']
 
@@ -166,11 +170,11 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
 
     inds = np.where(rois_class_score[:, -1] >= thresh)[0]
     if len(inds) == 0:
-        print 'No detected box with probality > thresh = ', thresh, '-- Choossing highest confidence bounding box.'
+        print ('No detected box with probality > thresh = ', thresh, '-- Choossing highest confidence bounding box.')
         inds = [np.argmax(rois_class_score)]  
         max_conf = np.max(rois_class_score)
         if max_conf < 0.001: 
-            return None, None  ## confidence is < 0.001 -- no good box --> must return
+            return None, None, []  ## confidence is < 0.001 -- no good box --> must return
             
 
     rois_final = rois_final[inds, :]
@@ -184,8 +188,10 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
     im_width = im.shape[1]
     im_height = im.shape[0]
     
+    im_ori = np.copy(im)
     # transpose
     im = im[:, :, (2, 1, 0)]
+    
 
     num_boxes = rois_final.shape[0]
     
@@ -249,18 +255,18 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
             # cv2.imwrite(os.path.join(benchmark_folder,'mask_' + str(i) + '_' + im_name), color_curr_mask)
 
 
-    ori_file_path = img_folder + '/' + im_name 
-    img_org = cv2.imread(ori_file_path)
+    # ori_file_path = img_folder + '/' + im_name 
+    # img_org = cv2.imread(ori_file_path)
     for ab in list_bboxes:
-        print 'box: ', ab
-        img_out = draw_reg_text(img_org, ab)
+        print ('box: ', ab)
+        img_out = draw_reg_text(im_ori, ab)
     
     
     # cv2.imshow('Obj detection', img_out)
     # cv2.waitKey(0)
     # cv2.imwrite(os.path.join(benchmark_folder, 'objdet_' + im_name), img_out)
 
-    return color_curr_mask, img_out
+    return color_curr_mask, img_out, list_bboxes
     
 
 
@@ -281,14 +287,16 @@ def run_affordance_net(net, image_name):
     timer.toc()
     
     # Visualize detections for each class
-    color_cuur_mask, img_out = visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
+    color_cuur_mask, img_out, list_bboxes = visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
 
     return color_cuur_mask, img_out
 
 
-def run_affordance_net_map(net, image_name, obj_name):
+def run_affordance_net_map(net, image_name):
     im_file = img_folder + '/' + im_name
     im = cv2.imread(im_file)
+
+    ori_height, ori_width, _ = im.shape
 
     if cfg.TEST.MASK_REG:
         rois_final, rois_class_score, rois_class_ind, masks, scores, boxes = im_detect2(net, im)
@@ -296,31 +304,108 @@ def run_affordance_net_map(net, image_name, obj_name):
         1
 
     # print "rois_final: ", rois_final
-    print "rois_class_score: ", rois_class_score, rois_class_score.shape
-    print "rois_class_ind: ", rois_class_ind, rois_class_ind.shape
+    # print "scores shape: ", scores.shape
+    # print "masks shape: ", masks.shape
+    # print "boxes shape: ", boxes.shape
+    # print "rois_class_score: ", rois_class_score, rois_class_score.shape
+    # print "rois_class_ind: ", rois_class_ind, rois_class_ind.shape
     
     assert rois_class_score.shape == rois_class_ind.shape
 
+    # Use the bounding box with the largest score as the classification result.
     largest_cfd_idx = np.argmax(rois_class_score)
     # print "largest_cfd_idx: ", largest_cfd_idx
 
     obj_cfd = rois_class_score[largest_cfd_idx][0]
     obj_classification_idx = rois_class_ind[largest_cfd_idx][0]
 
-    print "obj cfd: ", obj_cfd
-    print "obj classification idx: ", obj_classification_idx
+    # Find the bounding box in scores
+    largest_cfd_idx_in_score = np.where(scores==obj_cfd)
 
-    # Open container idx: bowl(1), cup(6), pan(3)
-    if obj_classification_idx == 1 or obj_classification_idx == 3 or obj_classification_idx == 6:
-        # print "Object is classified as an open container"
-        obj_iscontainer = True
-    else:
+    # If there is no detection then the container cfd equals 0
+    if rois_class_score[0][0] == -1:
         obj_iscontainer = False
+        obj_container_cfd = 0.0
+    else:
+        # Open container idx: bowl(1), cup(6), pan(3)
+        if obj_classification_idx == 1 or obj_classification_idx == 3 or obj_classification_idx == 6:
+            # print "Object is classified as an open container"
+            obj_iscontainer = True
+        else:
+            obj_iscontainer = False
+        
+        bbox_score_list = scores[largest_cfd_idx_in_score[0][0],:]
+        # print "bbox_score_list sum: ", np.sum(bbox_score_list)
+        bbox_container_score_list = np.array([bbox_score_list[1], bbox_score_list[3], bbox_score_list[6]])
+        # print "bbox_container_score_list: ", bbox_container_score_list
+        obj_container_cfd = np.max(bbox_container_score_list)
 
-    print "obj_iscontainer: ", obj_iscontainer
-    print "obj_cfd: ", obj_cfd
+    # print "obj_iscontainer: ", obj_iscontainer
+    # print "obj_container_cfd: ", obj_container_cfd
+
+    color_curr_mask, img_out = visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
+
+    return obj_iscontainer, obj_container_cfd, color_curr_mask, img_out
+
+
+def run_affordance_net_map_direct_crop(net, crop_img):
+
+    ori_height, ori_width, _ = crop_img.shape
+
+    if cfg.TEST.MASK_REG:
+        rois_final, rois_class_score, rois_class_ind, masks, scores, boxes = im_detect2(net, crop_img)
+    else:
+        1
+
+    # print "rois_final: ", rois_final
+    # print "scores shape: ", scores.shape
+    # print "masks shape: ", masks.shape
+    # print "boxes shape: ", boxes.shape
+    # print ("rois_class_score: ", rois_class_score, rois_class_score.shape)
+    # print ("rois_class_ind: ", rois_class_ind, rois_class_ind.shape)
     
-    return obj_iscontainer, obj_cfd
+    assert rois_class_score.shape == rois_class_ind.shape
+
+    # Use the bounding box with the largest score as the classification result.
+    largest_cfd_idx = np.argmax(rois_class_score)
+    # print "largest_cfd_idx: ", largest_cfd_idx
+
+    obj_cfd = rois_class_score[largest_cfd_idx][0]
+    obj_classification_idx = rois_class_ind[largest_cfd_idx][0]
+
+    # If there is no detection then the container cfd equals 0
+    if rois_class_score[0][0] == -1:
+        obj_iscontainer = False
+        obj_container_cfd = 0.0
+        # Nothing is detected
+        bbox_score_list = []
+    else:
+        # Find the bounding box in scores
+        largest_cfd_idx_in_score = np.where(scores==obj_cfd)
+        print ("largest_cfd_idx_in_score: ", largest_cfd_idx_in_score)
+        # Make sure there is only one such box
+        assert largest_cfd_idx_in_score[0].shape[0] == 1
+        assert largest_cfd_idx_in_score[1].shape[0] == 1
+        # Open container idx: bowl(1), cup(6), pan(3)
+        if obj_classification_idx == 1 or obj_classification_idx == 3 or obj_classification_idx == 6:
+            # print "Object is classified as an open container"
+            obj_iscontainer = True
+        else:
+            obj_iscontainer = False
+        
+        bbox_score_list = scores[largest_cfd_idx_in_score[0][0],:]
+        # print "bbox_score_list sum: ", np.sum(bbox_score_list)
+        bbox_container_score_list = np.array([bbox_score_list[1], bbox_score_list[3], bbox_score_list[6]])
+        # print "bbox_container_score_list: ", bbox_container_score_list
+        obj_container_cfd = np.max(bbox_container_score_list)
+
+    color_curr_mask, img_out, list_bboxes = visualize_mask(crop_img, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
+
+    # print "obj_iscontainer: ", obj_iscontainer
+    # print "obj_container_cfd: ", obj_container_cfd
+
+    return obj_iscontainer, obj_container_cfd, color_curr_mask, img_out, list_bboxes, bbox_score_list, rois_class_score, rois_class_ind
+
         
 
 def parse_args():
@@ -357,9 +442,10 @@ if __name__ == '__main__':
     
     # load network
     net = caffe.Net(prototxt, caffemodel, caffe.TEST)
-    print '\n\nLoaded network {:s}'.format(caffemodel)
+    print ('\n\nLoaded network {:s}'.format(caffemodel))
 
-    map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_map"
+    map_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_map_0726"
+    det_result_dir = "/home/hongtao/Dropbox/ICRA2021/affnet_benchmark/affnet_map_result_0726"
 
     # Class
     for class_folder in class_folders:
@@ -368,34 +454,137 @@ if __name__ == '__main__':
         object_folders = os.listdir(class_dir)
         # object_folders = ["Origami_Pink_Cup"]
 
-        print "object folders: ", object_folders
+        benchmark_objdet_class_dir = os.path.join(det_result_dir, class_folder)
+        if os.path.exists(benchmark_objdet_class_dir):
+            pass
+        else:
+            os.mkdir(benchmark_objdet_class_dir)
 
         # Object
         for object_folder in object_folders:
             obj_dir = os.path.join(class_dir, object_folder)
             img_folder = obj_dir # the code needs this parameter to find the image            
             img_files = os.listdir(obj_dir)
-            for img_file in img_files:
-                print 'Current img: ', os.path.join(obj_dir, img_file)
-                img_idx = img_file.split('.')[0]
+            
+            benchmark_objdet_obj_dir = os.path.join(benchmark_objdet_class_dir, object_folder)
+            if os.path.exists(benchmark_objdet_obj_dir):
+                pass
+            else:
+                os.mkdir(benchmark_objdet_obj_dir)
 
-                frame_map_dir = os.path.join(map_dir, img_idx)
-                if not os.path.exists(frame_map_dir):
-                    os.mkdir(frame_map_dir)
+            bbox_json = object_folder + "_bbox.json"
+            json_path = os.path.join(obj_dir, bbox_json)
+            rgbd_dir = os.path.join(obj_dir, 'rgbd')
+            with open(json_path) as f:
+                bbox_dict = json.load(f)
+                img_num = 0
+                total_img_num = 24
+                for (key, value) in bbox_dict.items():
+                    img_num += 1
+                    img_name = value["filename"]
+                    img = cv2.imread(os.path.join(rgbd_dir, img_name))
 
-                im_name = img_file
-                obj_name = object_folder
-                obj_iscontainer, obj_cfd = run_affordance_net_map(net, im_name, obj_name)
+                    print (object_folder)
+                    print (img_name)
 
-                map_filename = obj_name + ".txt"
-                map_path = os.path.join(frame_map_dir, map_filename)
-                with open(map_path, 'w') as f:
-                    if obj_iscontainer:
-                        writerow = "container " + str(obj_cfd) + " 0 1 2 3"
-                    else:
-                        writerow = "container 0 0 1 2 3"
+                    img_idx = img_name.split('.')[0]
+
+                    frame_map_dir = os.path.join(map_dir, img_idx)
+                    if not os.path.exists(frame_map_dir):
+                        os.mkdir(frame_map_dir)
                     
-                    f.write(writerow)
+                    img_h = img.shape[0]
+                    img_w = img.shape[1]
+                    print ("img_h, img_w: ", img_h, img_w)
+
+                    x = value["regions"][0]["shape_attributes"]["x"]
+                    y = value["regions"][0]["shape_attributes"]["y"]
+                    width = value["regions"][0]["shape_attributes"]["width"]
+                    height = value["regions"][0]["shape_attributes"]["height"]
+
+                    # print "x, y: ", x, y
+                    # print "width, height: ", width, height
+
+                    x_1 = max(0, x)
+                    y_1 = max(0, y)
+
+                    x_2 = min(x+width, img_w)
+                    y_2 = min(y+height, img_h)
+
+                    print ("x1, x2, y1, y2: {}, {}, {}, {}".format(x_1, x_2, y_1, y_2))
+                    crop_img = img[y_1:y_2, x_1:x_2]
+                    crop_img_name = img_name.split(".")[0] + ".crop.png"
+                    crop_img_path = os.path.join(benchmark_objdet_obj_dir, crop_img_name)
+                    cv2.imwrite(crop_img_path, crop_img)
+
+                    im_name = img_name
+                    obj_iscontainer, obj_container_cfd, color_curr_mask, img_out, list_bboxes, bbox_score_list, rois_class_score, rois_class_ind = run_affordance_net_map_direct_crop(net, crop_img)
+                    
+                    # print "obj_iscontainer: ", obj_iscontainer
+                    # print "obj_container_cfd: ", obj_container_cfd
+                    
+                    obj_name = object_folder
+                    map_filename = obj_name + ".txt"
+                    classification_filename = obj_name + "_classification.txt"
+                    map_path = os.path.join(frame_map_dir, map_filename)
+                    classification_path = os.path.join(frame_map_dir, classification_filename)
+                    with open(map_path, 'w') as f2:
+                        writerow = "container " + str(obj_container_cfd) + " 0 1 2 3"                   
+                        f2.write(writerow)
+                    with open(classification_path, 'w') as f3:
+                        if obj_iscontainer:
+                            writerow = "container"
+                        else:
+                            writerow = "noncontainer"
+                        f3.write(writerow)
+
+                    img_filename = img_name.split(".")[0]
+                    mask_filename = img_filename + ".mask.png"
+                    mask_path = os.path.join(benchmark_objdet_obj_dir, mask_filename)
+                    cv2.imwrite(mask_path, color_curr_mask)
+                    objdet_filename = img_filename + ".objdet.png"
+                    objdet_path = os.path.join(benchmark_objdet_obj_dir, objdet_filename)
+                    cv2.imwrite(objdet_path, img_out)
+
+                    # txt_file = img_filename + "_running.txt"
+                    # with open(os.path.join(benchmark_objdet_obj_dir, txt_file), 'a') as f1:
+                    #     print ("object folders: ", object_folders, file=f1)
+                    #     print ("rois_class_score: ", rois_class_score, file=f1)
+                    #     print ("rois_class_ind: ", rois_class_ind, file=f1)
+                    #     for ab in list_bboxes:
+                    #         print("box: ", ab, file=f1)
+                    #     print ("selected bbox score list: ", bbox_score_list, file=f1)
+                    #     print ("object container cfd: ", obj_container_cfd, file=f1)
+
+                    print ("======")
+        
+        assert img_num == total_img_num
+
+            # for img_file in img_files:
+            #     print 'Current img: ', os.path.join(obj_dir, img_file)
+            #     img_idx = img_file.split('.')[0]
+
+            #     frame_map_dir = os.path.join(map_dir, img_idx)
+            #     if not os.path.exists(frame_map_dir):
+            #         os.mkdir(frame_map_dir)
+
+            #     im_name = img_file
+            #     obj_name = object_folder
+            #     obj_iscontainer, obj_container_cfd, color_curr_mask, img_out = run_affordance_net_map(net, im_name, obj_name)
+            #     print "======"
+            #     map_filename = obj_name + ".txt"
+            #     map_path = os.path.join(frame_map_dir, map_filename)
+            #     with open(map_path, 'w') as f:
+            #         writerow = "container " + str(obj_container_cfd) + " 0 1 2 3"                   
+            #         f.write(writerow)
+
+            #     img_filename = img_file.split(".")[0]
+            #     mask_filename = img_filename + ".mask.png"
+            #     mask_path = os.path.join(benchmark_objdet_obj_dir, mask_filename)
+            #     cv2.imwrite(mask_path, color_curr_mask)
+            #     objdet_filename = img_filename + ".objdet.png"
+            #     objdet_path = os.path.join(benchmark_objdet_obj_dir, objdet_filename)
+            #     cv2.imwrite(objdet_path, img_out)
                 
                     
 

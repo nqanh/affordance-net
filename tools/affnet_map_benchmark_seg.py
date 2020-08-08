@@ -60,6 +60,8 @@ c11 = [184,134,0]
 c12 = [184,134,223]
 label_colours = np.array([background, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12])
 
+contain_aff_idx = 1
+
 # Object (Bounding box)
 col0 = [0, 0, 0]
 col1 = [0, 255, 255]
@@ -171,14 +173,18 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
         if max_conf < 0.001: 
             return None, None  ## confidence is < 0.001 -- no good box --> must return
             
-
     rois_final = rois_final[inds, :]
     rois_class_score = rois_class_score[inds,:]
     rois_class_ind = rois_class_ind[inds,:]
     
-
     # get mask
+    # masks was originally a (box_number, 10, 244, 244)
+    # which denotes the mask for each box
+    # after taking the indents, it denotes the mask for boxes
+    # which will be output
     masks = masks[inds, :, :, :]
+
+    # print "masks shape: ", masks.shape
     
     im_width = im.shape[1]
     im_height = im.shape[0]
@@ -187,12 +193,14 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
     im = im[:, :, (2, 1, 0)]
 
     num_boxes = rois_final.shape[0]
+
+    # print "num of boxes: ", num_boxes
     
     list_bboxes = []
-
     
     for i in xrange(0, num_boxes):
         
+        # the mask is initially set to be background first
         curr_mask = np.full((im_height, im_width), 0.0, 'float') # convert to int later
             
         class_id = int(rois_class_ind[i,0])
@@ -218,29 +226,176 @@ def visualize_mask(im, rois_final, rois_class_score, rois_class_ind, masks, ori_
             h = y2 - y1
             w = x2 - x1
             
+            # Take the i-th mask corresponding to the i-th box
             mask = masks[i, :, :, :]
             mask = np.argmax(mask, axis=0)
             
+            # print "mask1 shape: ", mask.shape
             
+            # Check if there is any class larger than the number of affordance category
             original_uni_ids = np.unique(mask)
-            # print "original_uni_ids: ", original_uni_ids
+            print "original_uni_ids: ", original_uni_ids
             stop = np.sum(original_uni_ids > 9)
-
 
             # sort before_uni_ids and reset [0, 1, 7] to [0, 1, 2]
             original_uni_ids.sort()
             mask = reset_mask_ids(mask, original_uni_ids)
-            
+            # reset_uni_ids = np.unique(mask)
+            # print "reset_uni_id: ", reset_uni_ids
+
             mask = cv2.resize(mask.astype('float'), (int(w), int(h)), interpolation=cv2.INTER_LINEAR)
+
+            print "mask2 shape: ", mask.shape
+
             #mask = convert_mask_to_original_ids(mask, original_uni_ids)
             mask = convert_mask_to_original_ids_manual(mask, original_uni_ids)
-            
+
+            print "mask3 shape: ", mask.shape
+
             #FOR MULTI CLASS MASK
             curr_mask[y1:y2, x1:x2] = mask # assign to output mask
             
             # visualize each mask
             curr_mask = curr_mask.astype('uint8')
             color_curr_mask = label_colours.take(curr_mask, axis=0).astype('uint8')
+            if stop:
+                cv2.imshow('Mask' + str(i), color_curr_mask)
+                cv2.imshow('Obj detection', img_out)
+                cv2.waitKey(0)            
+            # cv2.imwrite(os.path.join(benchmark_folder,'mask_' + str(i) + '_' + im_name), color_curr_mask)
+
+
+    ori_file_path = img_folder + '/' + im_name 
+    img_org = cv2.imread(ori_file_path)
+    for ab in list_bboxes:
+        print 'box: ', ab
+        img_out = draw_reg_text(img_org, ab)
+    
+    
+    # cv2.imshow('Obj detection', img_out)
+    # cv2.waitKey(0)
+    # cv2.imwrite(os.path.join(benchmark_folder, 'objdet_' + im_name), img_out)
+
+    return color_curr_mask, img_out
+
+
+def get_containability(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh):
+    """
+    Return obj_iscontainer and the confidence of being a container.
+    obj_iscontainer is for object classification accuracy. If the segmentation has contain affordance,
+    then obj_iscontainer is True; else False
+    """
+    obj_iscontainer = False
+    obj_iscontainer_cfd = 0.0
+
+    inds = np.where(rois_class_score[:, -1] >= thresh)[0]
+    if len(inds) == 0:
+        print 'No detected box with probality > thresh = ', thresh, '-- Choossing highest confidence bounding box.'
+        inds = [np.argmax(rois_class_score)]  
+        max_conf = np.max(rois_class_score)
+        if max_conf < 0.001: 
+            return obj_iscontainer, obj_iscontainer_cfd  ## confidence is < 0.001 -- no good box --> must return
+            
+    rois_final = rois_final[inds, :]
+    rois_class_score = rois_class_score[inds,:]
+    rois_class_ind = rois_class_ind[inds,:]
+    
+    # get mask
+    # masks was originally a (box_number, 10, 244, 244)
+    # which denotes the mask for each box
+    # after taking the indents, it denotes the mask for boxes
+    # which will be output
+    masks = masks[inds, :, :, :]
+
+    # print "masks shape: ", masks.shape
+    
+    im_width = im.shape[1]
+    im_height = im.shape[0]
+    
+    # transpose
+    im = im[:, :, (2, 1, 0)]
+
+    num_boxes = rois_final.shape[0]
+
+    # print "num of boxes: ", num_boxes
+    
+    list_bboxes = []
+    
+    for i in xrange(0, num_boxes):
+        
+        # the mask is initially set to be background first
+        curr_mask = np.full((im_height, im_width), 0.0, 'float') # convert to int later
+            
+        class_id = int(rois_class_ind[i,0])
+    
+        bbox = rois_final[i, 1:5]
+        score = rois_class_score[i,0]
+        
+        if cfg.TEST.MASK_REG:
+
+            x1 = int(round(bbox[0]))
+            y1 = int(round(bbox[1]))
+            x2 = int(round(bbox[2]))
+            y2 = int(round(bbox[3]))
+
+            x1 = np.min((im_width - 1, np.max((0, x1))))
+            y1 = np.min((im_height - 1, np.max((0, y1))))
+            x2 = np.min((im_width - 1, np.max((0, x2))))
+            y2 = np.min((im_height - 1, np.max((0, y2))))
+            
+            cur_box = [class_id, score, x1, y1, x2, y2]
+            list_bboxes.append(cur_box)
+            
+            h = y2 - y1
+            w = x2 - x1
+            
+            # Take the i-th mask corresponding to the i-th box
+            mask = masks[i, :, :, :]
+            mask = np.argmax(mask, axis=0)
+            
+            # print "mask1 shape: ", mask.shape
+            
+            # Check if there is any class larger than the number of affordance category
+            original_uni_ids = np.unique(mask)
+            print "original_uni_ids: ", original_uni_ids
+            stop = np.sum(original_uni_ids > 9)
+
+            if contain_aff_idx in original_uni_ids:
+                obj_iscontainer = True
+
+            # sort before_uni_ids and reset [0, 1, 7] to [0, 1, 2]
+            original_uni_ids.sort()
+            mask = reset_mask_ids(mask, original_uni_ids)
+            reset_uni_ids = np.unique(mask)
+            print "reset_uni_id: ", reset_uni_ids
+
+            mask = cv2.resize(mask.astype('float'), (int(w), int(h)), interpolation=cv2.INTER_LINEAR)
+
+            # print "mask2 shape: ", mask.shape
+
+            #mask = convert_mask_to_original_ids(mask, original_uni_ids)
+            mask = convert_mask_to_original_ids_manual(mask, original_uni_ids)
+            convert_reset_uni_ids = np.unique(mask)
+            print "convert_reset_uni_id: ", convert_reset_uni_ids
+
+            print "mask3 shape: ", mask.shape
+
+            contain_idx = np.where(mask == contain_aff_idx)
+            print "contain_idx: ", contain_idx
+            
+            #FOR MULTI CLASS MASK
+            curr_mask[y1:y2, x1:x2] = mask # assign to output mask
+
+            contain_mask = np.zeros((im_height, im_width))
+            contain_mask[curr_mask == contain_aff_idx] = 255
+            cv2.imshow("contain.png", contain_mask)
+            
+            # visualize each mask
+            curr_mask = curr_mask.astype('uint8')
+            color_curr_mask = label_colours.take(curr_mask, axis=0).astype('uint8')
+            
+            cv2.imshow('Mask' + str(i), color_curr_mask)
+            cv2.waitKey(0)
             if stop:
                 cv2.imshow('Mask' + str(i), color_curr_mask)
                 cv2.imshow('Obj detection', img_out)
@@ -289,13 +444,18 @@ def run_affordance_net_map(net, image_name, obj_name):
     im_file = img_folder + '/' + im_name
     im = cv2.imread(im_file)
 
+    ori_height, ori_width, _ = im.shape
+
     if cfg.TEST.MASK_REG:
         rois_final, rois_class_score, rois_class_ind, masks, scores, boxes = im_detect2(net, im)
     else:
         1
 
-    print "masks shape: ", masks.shape
-    print "scores shape: ", scores.shape
+    print "masks0 shape: ", masks.shape
+    print "scores0 shape: ", scores.shape
+
+    obj_iscontainer, obj_iscontainer_cfd = get_containability(im, rois_final, rois_class_score, rois_class_ind, masks, ori_height, ori_width, im_name, thresh=CONF_THRESHOLD)
+
         
 
 def parse_args():
@@ -361,6 +521,8 @@ if __name__ == '__main__':
                 im_name = img_file
                 obj_name = object_folder
                 run_affordance_net_map(net, im_name, obj_name)
+
+                print "======"
 
                 # map_filename = obj_name + ".txt"
                 # map_path = os.path.join(frame_map_dir, map_filename)
