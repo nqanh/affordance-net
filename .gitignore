@@ -1,0 +1,22 @@
+# file extensions
+*.so
+*.pyc
+*.caffemodel
+*.project
+*.pydevproject
+
+# folders
+pretrained
+output
+data
+imagenet_models
+experiments/logs
+caffe-affordance-net/build
+caffe-affordance-net/build.old
+caffe-affordance-net/data
+caffe-affordance-net/build
+caffe-affordance-net/.build_debug
+caffe-affordance-net/.build_release
+caffe-affordance-net/distribute
+caffe-affordance-net/cmake_build
+caffe-affordance-net/.cmake_build
